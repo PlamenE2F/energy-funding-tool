@@ -111,6 +111,14 @@ model BuildingTypeConfig {
   energyStarEligible       Boolean  @default(false) @map("energy_star_eligible")
   benchmarkCaveatText      String?  @map("benchmark_caveat_text")
   loadFactor               Decimal? @map("load_factor")
+
+  // LED measure config per building type
+  ledLightingSharePct      Decimal? @map("led_lighting_share_pct")
+  ledCostMidpointPerSqft   Decimal? @map("led_cost_midpoint_per_sqft")
+  ledCostUpperPerSqft      Decimal? @map("led_cost_upper_per_sqft")
+  ledMeasureApplicable     Boolean  @default(true) @map("led_measure_applicable")
+  ledMeasureNote           String?  @map("led_measure_note")
+
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("building_type_config")
@@ -138,6 +146,22 @@ model FuelTypeConfig {
 }
 
 // ---------------------------------------------------------------------------
+// LED Lighting Measure Configuration
+// ---------------------------------------------------------------------------
+
+/// Lighting technology type config (savings percentages vs LED)
+model LightingTechnologyConfig {
+  id                        Int      @id @default(autoincrement())
+  lightingTypeId            String   @unique @map("lighting_type_id")
+  displayName               String   @map("display_name")
+  savingsVsLedPct           Decimal  @map("savings_vs_led_pct")
+  hidLightingShareAdjustment Decimal @default(0) @map("hid_lighting_share_adjustment")
+  updatedAt                 DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("lighting_technology_config")
+}
+
+// ---------------------------------------------------------------------------
 // Assessment Tables
 // ---------------------------------------------------------------------------
 
@@ -158,6 +182,9 @@ model Assessment {
   annualGasM3           Decimal? @map("annual_gas_m3")
   primaryFuelType       String?  @map("primary_fuel_type") @db.VarChar(20)
   fuelVolume            Decimal? @map("fuel_volume")
+
+  // LED Measure Inputs
+  lightingType          String?  @map("lighting_type") @db.VarChar(30)
 
   // Rate Classification Results (Section 6.4)
   rateClass             String?  @map("rate_class") @db.VarChar(20)
@@ -249,6 +276,22 @@ model MeasureResult {
   co2AddedTonnes         Decimal? @map("co2_added_tonnes")
   co2NetReductionTonnes  Decimal? @map("co2_net_reduction_tonnes")
   emissionFactorUsed     Decimal? @map("emission_factor_used")
+
+  // LED-specific result fields
+  lightingEnergyKwh      Int?     @map("lighting_energy_kwh")
+  lightingShareUsed      Decimal? @map("lighting_share_used")
+  savingsPct             Decimal? @map("savings_pct")
+  incentiveEstimate      Decimal? @map("incentive_estimate")
+  netCostMidpoint        Decimal? @map("net_cost_midpoint")
+  netCostUpper           Decimal? @map("net_cost_upper")
+  paybackLower           Decimal? @map("payback_lower")
+  paybackUpper           Decimal? @map("payback_upper")
+  npvConservative        Decimal? @map("npv_conservative")
+  npvBase                Decimal? @map("npv_base")
+  npvHigh                Decimal? @map("npv_high")
+  confidence             String?  @map("confidence") @db.VarChar(10)
+  confidenceNote         String?  @map("confidence_note")
+  measureFlags           Json?    @map("measure_flags")
 
   // Carbon pricing (structural — null for Ontario)
   carbonSavingsPerMeasure Decimal? @map("carbon_savings_per_measure")

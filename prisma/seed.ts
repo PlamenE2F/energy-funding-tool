@@ -392,6 +392,61 @@ async function main() {
 
   console.log("  ✓ Ontario jurisdiction emission factors updated");
 
+  // -------------------------------------------------------------------
+  // 7. Lighting Technology Configs (LED Measure)
+  // -------------------------------------------------------------------
+
+  const lightingTechnologies = [
+    { lightingTypeId: "fluorescent_t12", displayName: "Fluorescent (T12)", savingsVsLedPct: 0.60, hidLightingShareAdjustment: 0 },
+    { lightingTypeId: "fluorescent_t8", displayName: "Fluorescent (T8/T5)", savingsVsLedPct: 0.40, hidLightingShareAdjustment: 0 },
+    { lightingTypeId: "hid", displayName: "HID (Metal Halide / HPS)", savingsVsLedPct: 0.60, hidLightingShareAdjustment: 0.10 },
+    { lightingTypeId: "mixed", displayName: "Mixed (various types)", savingsVsLedPct: 0.35, hidLightingShareAdjustment: 0 },
+    { lightingTypeId: "unknown", displayName: "Unknown", savingsVsLedPct: 0.35, hidLightingShareAdjustment: 0 },
+    { lightingTypeId: "led", displayName: "LED (already upgraded)", savingsVsLedPct: 0, hidLightingShareAdjustment: 0 },
+  ];
+
+  for (const lt of lightingTechnologies) {
+    await prisma.lightingTechnologyConfig.upsert({
+      where: { lightingTypeId: lt.lightingTypeId },
+      update: lt,
+      create: lt,
+    });
+  }
+
+  console.log(`  ✓ ${lightingTechnologies.length} lighting technology configs`);
+
+  // -------------------------------------------------------------------
+  // 8. Update Building Types with LED Measure Config
+  // -------------------------------------------------------------------
+
+  const ledBuildingUpdates: Record<string, { ledLightingSharePct: number; ledCostMidpointPerSqft: number; ledCostUpperPerSqft: number; ledMeasureApplicable: boolean; ledMeasureNote: string | null }> = {
+    office: { ledLightingSharePct: 0.30, ledCostMidpointPerSqft: 2.00, ledCostUpperPerSqft: 3.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    warehouse: { ledLightingSharePct: 0.20, ledCostMidpointPerSqft: 1.50, ledCostUpperPerSqft: 3.00, ledMeasureApplicable: true, ledMeasureNote: null },
+    warehouse_cold: { ledLightingSharePct: 0.14, ledCostMidpointPerSqft: 2.00, ledCostUpperPerSqft: 3.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    manufacturing: { ledLightingSharePct: 0.15, ledCostMidpointPerSqft: 1.50, ledCostUpperPerSqft: 3.00, ledMeasureApplicable: true, ledMeasureNote: null },
+    manufacturing_food: { ledLightingSharePct: 0.12, ledCostMidpointPerSqft: 2.00, ledCostUpperPerSqft: 3.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    retail: { ledLightingSharePct: 0.35, ledCostMidpointPerSqft: 2.50, ledCostUpperPerSqft: 4.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    restaurant: { ledLightingSharePct: 0.12, ledCostMidpointPerSqft: 2.50, ledCostUpperPerSqft: 4.00, ledMeasureApplicable: true, ledMeasureNote: null },
+    medical_office: { ledLightingSharePct: 0.20, ledCostMidpointPerSqft: 2.50, ledCostUpperPerSqft: 4.00, ledMeasureApplicable: true, ledMeasureNote: null },
+    school: { ledLightingSharePct: 0.30, ledCostMidpointPerSqft: 2.00, ledCostUpperPerSqft: 3.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    data_center: { ledLightingSharePct: 0.03, ledCostMidpointPerSqft: 1.00, ledCostUpperPerSqft: 2.00, ledMeasureApplicable: true, ledMeasureNote: "Lighting is a small fraction of your energy use. Other efficiency measures will have greater impact for this building type." },
+    agriculture: { ledLightingSharePct: 0.10, ledCostMidpointPerSqft: 1.00, ledCostUpperPerSqft: 2.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    greenhouse: { ledLightingSharePct: 0.45, ledCostMidpointPerSqft: 0, ledCostUpperPerSqft: 0, ledMeasureApplicable: false, ledMeasureNote: "Specialized horticultural lighting requires a different approach. Contact a horticultural lighting specialist. SaveOnEnergy offers greenhouse-specific measures." },
+    multifamily: { ledLightingSharePct: 0.25, ledCostMidpointPerSqft: 2.00, ledCostUpperPerSqft: 3.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    hotel: { ledLightingSharePct: 0.20, ledCostMidpointPerSqft: 2.50, ledCostUpperPerSqft: 4.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    grocery: { ledLightingSharePct: 0.20, ledCostMidpointPerSqft: 2.00, ledCostUpperPerSqft: 3.50, ledMeasureApplicable: true, ledMeasureNote: null },
+    other: { ledLightingSharePct: 0.25, ledCostMidpointPerSqft: 2.00, ledCostUpperPerSqft: 3.50, ledMeasureApplicable: true, ledMeasureNote: null },
+  };
+
+  for (const [buildingTypeId, ledConfig] of Object.entries(ledBuildingUpdates)) {
+    await prisma.buildingTypeConfig.update({
+      where: { buildingTypeId },
+      data: ledConfig,
+    });
+  }
+
+  console.log(`  ✓ ${Object.keys(ledBuildingUpdates).length} building types updated with LED config`);
+
   console.log("\nOntario configuration seeding complete.");
 }
 
