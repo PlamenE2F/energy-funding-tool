@@ -318,7 +318,81 @@ async function main() {
 
   console.log(`  ✓ ${touPeriods.length} TOU period configs`);
 
-  console.log("\nOntario rate configuration seeding complete.");
+  // -------------------------------------------------------------------
+  // 4. Building Type Configs (16 canonical types)
+  // -------------------------------------------------------------------
+
+  const buildingTypes = [
+    { buildingTypeId: "office", buildingTypeName: "Office", benchmarkSource: "SCIEU 2019 — Office (excl. medical)", benchmarkEuiGjM2: 0.87, benchmarkEuiKwhSqft: 22.5, electricityFraction: 0.60, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.45 },
+    { buildingTypeId: "warehouse", buildingTypeName: "Warehouse (Dry Storage)", benchmarkSource: "SCIEU 2019 — Warehouse", benchmarkEuiGjM2: 0.72, benchmarkEuiKwhSqft: 18.6, electricityFraction: 0.50, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.35 },
+    { buildingTypeId: "warehouse_cold", buildingTypeName: "Warehouse (Cold Storage)", benchmarkSource: "SCIEU 2019 — Warehouse (proxy)", benchmarkEuiGjM2: 0.72, benchmarkEuiKwhSqft: 18.6, electricityFraction: 0.85, benchmarkClassification: "yellow", energyStarEligible: false, benchmarkCaveatText: "This benchmark reflects typical dry warehousing. Cold storage facilities typically use significantly more energy due to refrigeration loads.", loadFactor: 0.35 },
+    { buildingTypeId: "manufacturing", buildingTypeName: "Manufacturing (Light)", benchmarkSource: "SCIEU 2019 — Warehouse (proxy)", benchmarkEuiGjM2: 0.72, benchmarkEuiKwhSqft: 18.6, electricityFraction: 0.55, benchmarkClassification: "yellow", energyStarEligible: false, benchmarkCaveatText: "Using warehouse benchmark as proxy — manufacturing process loads may increase energy use significantly beyond this reference.", loadFactor: 0.55 },
+    { buildingTypeId: "manufacturing_food", buildingTypeName: "Manufacturing (Food)", benchmarkSource: "SCIEU 2019 — Restaurant (proxy)", benchmarkEuiGjM2: 1.28, benchmarkEuiKwhSqft: 33.1, electricityFraction: 0.50, benchmarkClassification: "yellow", energyStarEligible: false, benchmarkCaveatText: "Using approximate benchmark — food processing energy profiles vary widely based on scale and process type.", loadFactor: 0.55 },
+    { buildingTypeId: "retail", buildingTypeName: "Retail", benchmarkSource: "SCIEU 2019 — Retail (non-food)", benchmarkEuiGjM2: 0.85, benchmarkEuiKwhSqft: 22.0, electricityFraction: 0.65, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.40 },
+    { buildingTypeId: "restaurant", buildingTypeName: "Food Service / Restaurant", benchmarkSource: "SCIEU 2019 — Restaurant", benchmarkEuiGjM2: 1.28, benchmarkEuiKwhSqft: 33.1, electricityFraction: 0.45, benchmarkClassification: "green", energyStarEligible: false, benchmarkCaveatText: null, loadFactor: 0.45 },
+    { buildingTypeId: "medical_office", buildingTypeName: "Healthcare / Medical", benchmarkSource: "SCIEU 2019 — Medical office", benchmarkEuiGjM2: 0.74, benchmarkEuiKwhSqft: 19.1, electricityFraction: 0.60, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.40 },
+    { buildingTypeId: "school", buildingTypeName: "Education", benchmarkSource: "SCIEU 2019 — Primary/secondary", benchmarkEuiGjM2: 0.70, benchmarkEuiKwhSqft: 18.1, electricityFraction: 0.45, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.30 },
+    { buildingTypeId: "data_center", buildingTypeName: "Data Center", benchmarkSource: null, benchmarkEuiGjM2: null, benchmarkEuiKwhSqft: null, electricityFraction: 0.95, benchmarkClassification: "red", energyStarEligible: false, benchmarkCaveatText: null, loadFactor: 0.80 },
+    { buildingTypeId: "agriculture", buildingTypeName: "Agriculture (Traditional)", benchmarkSource: null, benchmarkEuiGjM2: null, benchmarkEuiKwhSqft: null, electricityFraction: 0.50, benchmarkClassification: "red", energyStarEligible: false, benchmarkCaveatText: null, loadFactor: 0.40 },
+    { buildingTypeId: "greenhouse", buildingTypeName: "Agriculture (Greenhouse)", benchmarkSource: null, benchmarkEuiGjM2: null, benchmarkEuiKwhSqft: null, electricityFraction: 0.60, benchmarkClassification: "red", energyStarEligible: false, benchmarkCaveatText: null, loadFactor: 0.50 },
+    { buildingTypeId: "multifamily", buildingTypeName: "Multi-Residential", benchmarkSource: "SECMURBs 2018", benchmarkEuiGjM2: 0.82, benchmarkEuiKwhSqft: 21.2, electricityFraction: 0.45, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.45 },
+    { buildingTypeId: "hotel", buildingTypeName: "Hotel / Hospitality", benchmarkSource: "SCIEU 2019 — Hotel/motel", benchmarkEuiGjM2: 0.87, benchmarkEuiKwhSqft: 22.5, electricityFraction: 0.50, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.50 },
+    { buildingTypeId: "grocery", buildingTypeName: "Grocery / Supermarket", benchmarkSource: "SCIEU 2019 — Food/beverage store", benchmarkEuiGjM2: 1.07, benchmarkEuiKwhSqft: 27.7, electricityFraction: 0.75, benchmarkClassification: "green", energyStarEligible: true, benchmarkCaveatText: null, loadFactor: 0.55 },
+    { buildingTypeId: "other", buildingTypeName: "Other Commercial", benchmarkSource: "SCIEU 2019 — Others Inscope", benchmarkEuiGjM2: 0.86, benchmarkEuiKwhSqft: 22.2, electricityFraction: 0.55, benchmarkClassification: "red", energyStarEligible: false, benchmarkCaveatText: null, loadFactor: 0.40 },
+  ];
+
+  for (const bt of buildingTypes) {
+    await prisma.buildingTypeConfig.upsert({
+      where: { buildingTypeId: bt.buildingTypeId },
+      update: bt,
+      create: bt,
+    });
+  }
+
+  console.log(`  ✓ ${buildingTypes.length} building type configs`);
+
+  // -------------------------------------------------------------------
+  // 5. Fuel Type Configs (ECCC V3.0)
+  // -------------------------------------------------------------------
+
+  const fuelTypes = [
+    { fuelTypeId: "natural_gas", fuelTypeName: "Natural Gas", conversionFactorKwh: 10.55, unit: "m3", emissionFactorCo2: 1921, emissionFactorCh4: 0.037, emissionFactorN2o: 0.035, emissionFactorTotal: 1932, gwpCh4: 25, gwpN2o: 298, emissionFactorSource: "ECCC V3.0 Tables 1.3/2.3/3.3/4.3", sourceSiteRatio: 1.02, effectiveDate: new Date("2025-10-01") },
+    { fuelTypeId: "fuel_oil", fuelTypeName: "Fuel Oil (#2)", conversionFactorKwh: 10.74, unit: "litre", emissionFactorCo2: 2753, emissionFactorCh4: 0.026, emissionFactorN2o: 0.031, emissionFactorTotal: 2763, gwpCh4: 25, gwpN2o: 298, emissionFactorSource: "ECCC V3.0 Tables 1.3/2.3/3.3/4.3", sourceSiteRatio: 1.01, effectiveDate: new Date("2025-10-01") },
+    { fuelTypeId: "propane", fuelTypeName: "Propane", conversionFactorKwh: 7.08, unit: "litre", emissionFactorCo2: 1515, emissionFactorCh4: 0.024, emissionFactorN2o: 0.108, emissionFactorTotal: 1548, gwpCh4: 25, gwpN2o: 298, emissionFactorSource: "ECCC V3.0 Tables 1.3/2.3/3.3/4.3", sourceSiteRatio: 1.01, effectiveDate: new Date("2025-10-01") },
+  ];
+
+  for (const ft of fuelTypes) {
+    await prisma.fuelTypeConfig.upsert({
+      where: { fuelTypeId: ft.fuelTypeId },
+      update: ft,
+      create: ft,
+    });
+  }
+
+  console.log(`  ✓ ${fuelTypes.length} fuel type configs`);
+
+  // -------------------------------------------------------------------
+  // 6. Update Ontario jurisdiction with emission factors
+  // -------------------------------------------------------------------
+
+  await prisma.jurisdictionConfig.update({
+    where: { jurisdictionId: "ON" },
+    data: {
+      scope2AverageFactor: 59,
+      scope2AverageFactorYear: 2026,
+      sourceSiteRatioElectricity: 2.05,
+      sourceSiteRatioFuel: 1.02,
+      benchmarkCostRateElectric: 0.13,
+      benchmarkCostRateGas: 0.35,
+      carbonPricePerTonne: null,
+      carbonPriceEffectiveDate: null,
+      carbonPriceSource: null,
+    },
+  });
+
+  console.log("  ✓ Ontario jurisdiction emission factors updated");
+
+  console.log("\nOntario configuration seeding complete.");
 }
 
 main()

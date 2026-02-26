@@ -31,6 +31,19 @@ model JurisdictionConfig {
   effectiveDate        DateTime @map("effective_date") @db.Date
   updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
 
+  // Emission factors (EUI Brief Section 8, Step 1)
+  scope2AverageFactor        Decimal? @map("scope2_average_factor")
+  scope2AverageFactorYear    Int?     @map("scope2_average_factor_year")
+  sourceSiteRatioElectricity Decimal? @map("source_site_ratio_electricity")
+  sourceSiteRatioFuel        Decimal? @map("source_site_ratio_fuel")
+  benchmarkCostRateElectric  Decimal? @map("benchmark_cost_rate_electric")
+  benchmarkCostRateGas       Decimal? @map("benchmark_cost_rate_gas")
+
+  // Carbon pricing (structural — null for Ontario)
+  carbonPricePerTonne        Decimal? @map("carbon_price_per_tonne")
+  carbonPriceEffectiveDate   DateTime? @map("carbon_price_effective_date") @db.Date
+  carbonPriceSource          String?  @map("carbon_price_source")
+
   rateClasses RateClassConfig[]
   touPeriods  TouPeriodConfig[]
 
@@ -82,10 +95,53 @@ model TouPeriodConfig {
 }
 
 // ---------------------------------------------------------------------------
+// EUI & Emissions Configuration Tables
+// ---------------------------------------------------------------------------
+
+/// Building type benchmark config (16 canonical types)
+model BuildingTypeConfig {
+  id                       Int      @id @default(autoincrement())
+  buildingTypeId           String   @unique @map("building_type_id")
+  buildingTypeName         String   @map("building_type_name")
+  benchmarkSource          String?  @map("benchmark_source")
+  benchmarkEuiGjM2         Decimal? @map("benchmark_eui_gj_m2")
+  benchmarkEuiKwhSqft      Decimal? @map("benchmark_eui_kwh_sqft")
+  electricityFraction      Decimal  @map("electricity_fraction")
+  benchmarkClassification  String   @map("benchmark_classification") @db.VarChar(10)
+  energyStarEligible       Boolean  @default(false) @map("energy_star_eligible")
+  benchmarkCaveatText      String?  @map("benchmark_caveat_text")
+  loadFactor               Decimal? @map("load_factor")
+  updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("building_type_config")
+}
+
+/// Fuel type config with emission factors (ECCC V3.0)
+model FuelTypeConfig {
+  id                    Int      @id @default(autoincrement())
+  fuelTypeId            String   @unique @map("fuel_type_id")
+  fuelTypeName          String   @map("fuel_type_name")
+  conversionFactorKwh   Decimal  @map("conversion_factor_kwh")
+  unit                  String   @db.VarChar(10)
+  emissionFactorCo2     Decimal  @map("emission_factor_co2")
+  emissionFactorCh4     Decimal  @map("emission_factor_ch4")
+  emissionFactorN2o     Decimal  @map("emission_factor_n2o")
+  emissionFactorTotal   Decimal  @map("emission_factor_total")
+  gwpCh4                Int      @default(25) @map("gwp_ch4")
+  gwpN2o                Int      @default(298) @map("gwp_n2o")
+  emissionFactorSource  String   @map("emission_factor_source")
+  sourceSiteRatio       Decimal  @default(1.02) @map("source_site_ratio")
+  effectiveDate         DateTime @map("effective_date") @db.Date
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("fuel_type_config")
+}
+
+// ---------------------------------------------------------------------------
 // Assessment Tables
 // ---------------------------------------------------------------------------
 
-/// Building assessment with rate classification results
+/// Building assessment with rate classification + EUI + emissions results
 model Assessment {
   id                    String   @id @default(cuid())
   createdAt             DateTime @default(now()) @map("created_at")
@@ -99,6 +155,9 @@ model Assessment {
   annualElectricityKwh  Int      @map("annual_electricity_kwh")
   annualElectricityCost Decimal? @map("annual_electricity_cost")
   peakDemandKw          Decimal? @map("peak_demand_kw")
+  annualGasM3           Decimal? @map("annual_gas_m3")
+  primaryFuelType       String?  @map("primary_fuel_type") @db.VarChar(20)
+  fuelVolume            Decimal? @map("fuel_volume")
 
   // Rate Classification Results (Section 6.4)
   rateClass             String?  @map("rate_class") @db.VarChar(20)
@@ -112,6 +171,44 @@ model Assessment {
   effectiveRateSource   String?  @map("effective_rate_source") @db.VarChar(20)
   demandChargeRate      Decimal? @map("demand_charge_rate")
   demandChargeApplicable Boolean? @map("demand_charge_applicable")
+
+  // EUI Results (Section 7.3)
+  completionPath        String?  @map("completion_path") @db.VarChar(10)
+  euiElectric           Decimal? @map("eui_electric")
+  euiTotal              Decimal? @map("eui_total")
+  euiWeatherNormalized  Decimal? @map("eui_weather_normalized")
+  euiSourceElectric     Decimal? @map("eui_source_electric")
+  euiSourceTotal        Decimal? @map("eui_source_total")
+  gasKwhEquivalent      Decimal? @map("gas_kwh_equivalent")
+  userEuiVsMedianPct    Decimal? @map("user_eui_vs_median_pct")
+  benchmarkComparisonShown Boolean? @map("benchmark_comparison_shown")
+  benchmarkCaveatText   String?  @map("benchmark_caveat_text")
+
+  // Regression Results (Section 7.4 — Enhanced Path)
+  regressionModelType   String?  @map("regression_model_type") @db.VarChar(10)
+  baseloadElectricMonthly Decimal? @map("baseload_electric_monthly")
+  betaHeatElectric      Decimal? @map("beta_heat_electric")
+  rSquaredElectric      Decimal? @map("r_squared_electric")
+  changepointTemp       Decimal? @map("changepoint_temp")
+  baseloadElectricAnnual Decimal? @map("baseload_electric_annual")
+  weatherDepElectricAnnual Decimal? @map("weather_dep_electric_annual")
+  baseloadGasMonthly    Decimal? @map("baseload_gas_monthly")
+  betaHeatGas           Decimal? @map("beta_heat_gas")
+  rSquaredGas           Decimal? @map("r_squared_gas")
+  regressionQualityFlag String?  @map("regression_quality_flag") @db.VarChar(10)
+
+  // Emissions Results (Section 7.5)
+  scope1EmissionFactor  Decimal? @map("scope1_emission_factor")
+  scope2AverageFactor   Decimal? @map("scope2_average_factor")
+  scope2AverageFactorYear Int?   @map("scope2_average_factor_year")
+  scope1Tonnes          Decimal? @map("scope1_tonnes")
+  scope2Tonnes          Decimal? @map("scope2_tonnes")
+  totalEmissionsTonnes  Decimal? @map("total_emissions_tonnes")
+  carbonIntensity       Decimal? @map("carbon_intensity")
+  scope1CalculatedFromEstimate Boolean? @map("scope1_calculated_from_estimate")
+
+  // Carbon Pricing (Section 7.7 — structural only, null for Ontario)
+  carbonCostAnnual      Decimal? @map("carbon_cost_annual")
 
   // Warnings stored as JSON array
   classificationWarnings Json?   @map("classification_warnings")
@@ -144,6 +241,17 @@ model MeasureResult {
   tenYearConservative    Int?     @map("ten_year_conservative")
   tenYearBaseCase        Int?     @map("ten_year_base_case")
   tenYearHighGrowth      Int?     @map("ten_year_high_growth")
+
+  // Emissions fields (Section 7.6)
+  co2ReductionElectricityTonnes Decimal? @map("co2_reduction_electricity_tonnes")
+  co2ReductionFuelTonnes Decimal? @map("co2_reduction_fuel_tonnes")
+  co2ReductionTotalTonnes Decimal? @map("co2_reduction_total_tonnes")
+  co2AddedTonnes         Decimal? @map("co2_added_tonnes")
+  co2NetReductionTonnes  Decimal? @map("co2_net_reduction_tonnes")
+  emissionFactorUsed     Decimal? @map("emission_factor_used")
+
+  // Carbon pricing (structural — null for Ontario)
+  carbonSavingsPerMeasure Decimal? @map("carbon_savings_per_measure")
 
   assessment Assessment @relation(fields: [assessmentId], references: [id])
 
