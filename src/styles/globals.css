@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/*
+ * VoltMatch Design Tokens
+ * All CSS variables use the --vm- prefix to avoid conflicts with shadcn/ui.
+ * Brand palette approved by CEO + Product Architect.
+ */
+:root {
+  /* Brand Colors */
+  --vm-navy: #0b1d3a;
+  --vm-green: #00a878;
+  --vm-amber: #f5a623;
+
+  /* CTA Colors */
+  --vm-green-cta: #009968;
+  --vm-green-cta-hover: #00b87a;
+
+  /* Neutral Palette */
+  --vm-white: #ffffff;
+  --vm-gray-50: #f9fafb;
+  --vm-gray-100: #f3f4f6;
+  --vm-gray-200: #e5e7eb;
+  --vm-gray-300: #d1d5db;
+  --vm-gray-400: #9ca3af;
+  --vm-gray-500: #6b7280;
+  --vm-gray-600: #4b5563;
+  --vm-gray-700: #374151;
+  --vm-gray-800: #1f2937;
+  --vm-gray-900: #111827;
+
+  /* Semantic Colors */
+  --vm-success: #00a878;
+  --vm-warning: #f5a623;
+  --vm-error: #dc2626;
+  --vm-info: #2563eb;
+
+  /* Rate Class Indicator Colors */
+  --vm-rate-rpp: #3b82f6;
+  --vm-rate-class-b: #f59e0b;
+  --vm-rate-class-a: #10b981;
+
+  /* Typography */
+  --vm-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --vm-font-mono: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+
+  /* Spacing */
+  --vm-card-padding: 1.5rem;
+  --vm-card-radius: 0.75rem;
+  --vm-card-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1),
+    0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+body {
+  font-family: var(--vm-font-sans);
+  color: var(--vm-gray-800);
+  background-color: var(--vm-gray-50);
+}
+
+.vm-container {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}

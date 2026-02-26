@@ -1,0 +1,151 @@
+// VoltMatch Database Schema
+// All configurable rate values stored in database tables, not hardcoded.
+// Supports multi-jurisdictional expansion (ON, BC, QC, AB, UK, AU).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Configuration Tables (Section 6 of Rate Classification Framework)
+// ---------------------------------------------------------------------------
+
+/// Jurisdiction-level settings (e.g., Ontario, British Columbia)
+model JurisdictionConfig {
+  jurisdictionId       String   @id @map("jurisdiction_id") @db.VarChar(10)
+  jurisdictionName     String   @map("jurisdiction_name")
+  country              String   @db.VarChar(5)
+  currency             String   @db.VarChar(5)
+  areaUnit             String   @map("area_unit") @db.VarChar(10)
+  energyUnit           String   @map("energy_unit") @db.VarChar(10)
+  gasUnit              String   @map("gas_unit") @db.VarChar(10)
+  taxRate              Decimal  @map("tax_rate")
+  rebateName           String?  @map("rebate_name")
+  rebateRate           Decimal? @map("rebate_rate")
+  rebateEligibleClasses Json?   @map("rebate_eligible_classes")
+  effectiveDate        DateTime @map("effective_date") @db.Date
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
+
+  rateClasses RateClassConfig[]
+  touPeriods  TouPeriodConfig[]
+
+  @@map("jurisdiction_config")
+}
+
+/// Rate class definitions per jurisdiction
+model RateClassConfig {
+  id                   Int      @id @default(autoincrement())
+  jurisdictionId       String   @map("jurisdiction_id") @db.VarChar(10)
+  rateClassId          String   @map("rate_class_id")
+  rateClassName        String   @map("rate_class_name")
+  peakDemandMinKw      Decimal? @map("peak_demand_min_kw")
+  peakDemandMaxKw      Decimal? @map("peak_demand_max_kw")
+  annualKwhMin         Int?     @map("annual_kwh_min")
+  annualKwhMax         Int?     @map("annual_kwh_max")
+  hasDemandCharges     Boolean  @default(false) @map("has_demand_charges")
+  hasTemporalPricing   Boolean  @default(false) @map("has_temporal_pricing")
+  hasSeparateGa        Boolean  @default(false) @map("has_separate_ga")
+  defaultEffectiveRate Decimal  @map("default_effective_rate")
+  defaultEnergyRate    Decimal  @map("default_energy_rate")
+  demandChargeRate     Decimal? @map("demand_charge_rate")
+  effectiveDate        DateTime @map("effective_date") @db.Date
+  sourceReference      String?  @map("source_reference")
+
+  jurisdiction JurisdictionConfig @relation(fields: [jurisdictionId], references: [jurisdictionId])
+
+  @@unique([jurisdictionId, rateClassId])
+  @@map("rate_class_config")
+}
+
+/// TOU period definitions (time-of-use periods with seasonal rates)
+model TouPeriodConfig {
+  id             Int      @id @default(autoincrement())
+  jurisdictionId String   @map("jurisdiction_id") @db.VarChar(10)
+  rateClassId    String   @map("rate_class_id")
+  season         String   @db.VarChar(20)
+  seasonStart    String?  @map("season_start") @db.VarChar(20)
+  seasonEnd      String?  @map("season_end") @db.VarChar(20)
+  periodName     String   @map("period_name") @db.VarChar(30)
+  weekdayHours   Json?    @map("weekday_hours")
+  weekendHours   Json?    @map("weekend_hours")
+  ratePerKwh     Decimal  @map("rate_per_kwh")
+  effectiveDate  DateTime @map("effective_date") @db.Date
+
+  jurisdiction JurisdictionConfig @relation(fields: [jurisdictionId], references: [jurisdictionId])
+
+  @@map("tou_period_config")
+}
+
+// ---------------------------------------------------------------------------
+// Assessment Tables
+// ---------------------------------------------------------------------------
+
+/// Building assessment with rate classification results
+model Assessment {
+  id                    String   @id @default(cuid())
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Input fields
+  postalCode            String   @map("postal_code") @db.VarChar(10)
+  buildingType          String   @map("building_type") @db.VarChar(30)
+  buildingSizeSqft      Int      @map("building_size_sqft")
+  operatingHours        Int      @map("operating_hours")
+  annualElectricityKwh  Int      @map("annual_electricity_kwh")
+  annualElectricityCost Decimal? @map("annual_electricity_cost")
+  peakDemandKw          Decimal? @map("peak_demand_kw")
+
+  // Rate Classification Results (Section 6.4)
+  rateClass             String?  @map("rate_class") @db.VarChar(20)
+  rateClassSource       String?  @map("rate_class_source") @db.VarChar(20)
+  rateClassConfidence   String?  @map("rate_class_confidence") @db.VarChar(10)
+  rateStructure         String?  @map("rate_structure") @db.VarChar(30)
+  estimatedPeakKw       Decimal? @map("estimated_peak_kw_for_class")
+  classAEligible        Boolean? @map("class_a_eligible")
+  effectiveRateTotal    Decimal? @map("effective_rate_total")
+  effectiveRateEnergy   Decimal? @map("effective_rate_energy")
+  effectiveRateSource   String?  @map("effective_rate_source") @db.VarChar(20)
+  demandChargeRate      Decimal? @map("demand_charge_rate")
+  demandChargeApplicable Boolean? @map("demand_charge_applicable")
+
+  // Warnings stored as JSON array
+  classificationWarnings Json?   @map("classification_warnings")
+
+  measureResults MeasureResult[]
+
+  @@map("assessments")
+}
+
+/// Measure card results linked to an assessment
+model MeasureResult {
+  id                     String   @id @default(cuid())
+  assessmentId           String   @map("assessment_id")
+  measureType            String   @map("measure_type") @db.VarChar(30)
+  measureName            String   @map("measure_name")
+
+  // Energy savings
+  energySavingsKwh       Int      @map("energy_savings_kwh")
+  energySavingsDollars   Decimal  @map("energy_savings_dollars")
+
+  // Demand savings (Section 6.5)
+  peakReductionApplicable Boolean @map("peak_reduction_applicable")
+  peakReductionKw        Decimal? @map("peak_reduction_kw")
+  demandSavingsAnnual    Decimal? @map("demand_savings_annual")
+
+  // Total
+  totalSavingsAnnual     Decimal  @map("total_savings_annual")
+
+  // 10-year projections
+  tenYearConservative    Int?     @map("ten_year_conservative")
+  tenYearBaseCase        Int?     @map("ten_year_base_case")
+  tenYearHighGrowth      Int?     @map("ten_year_high_growth")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id])
+
+  @@map("measure_results")
+}
