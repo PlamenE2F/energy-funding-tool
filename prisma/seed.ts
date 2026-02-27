@@ -447,6 +447,38 @@ async function main() {
 
   console.log(`  ✓ ${Object.keys(ledBuildingUpdates).length} building types updated with LED config`);
 
+  // -------------------------------------------------------------------
+  // 9. Update Building Types with HVAC Measure Config
+  // -------------------------------------------------------------------
+
+  const hvacBuildingUpdates: Record<string, { hvacElectricPct: number; hvacGasPct: number; hvacMeasureApplicable: boolean; hvacMeasureNote: string | null }> = {
+    office: { hvacElectricPct: 0.30, hvacGasPct: 0.85, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    warehouse: { hvacElectricPct: 0.15, hvacGasPct: 0.90, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    warehouse_cold: { hvacElectricPct: 0.50, hvacGasPct: 0.80, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    manufacturing: { hvacElectricPct: 0.25, hvacGasPct: 0.75, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    manufacturing_food: { hvacElectricPct: 0.35, hvacGasPct: 0.55, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    retail: { hvacElectricPct: 0.30, hvacGasPct: 0.85, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    restaurant: { hvacElectricPct: 0.20, hvacGasPct: 0.40, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    medical_office: { hvacElectricPct: 0.35, hvacGasPct: 0.70, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    school: { hvacElectricPct: 0.25, hvacGasPct: 0.85, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    data_center: { hvacElectricPct: 0.35, hvacGasPct: 0.10, hvacMeasureApplicable: true, hvacMeasureNote: "Data center HVAC is cooling-dominated. A Tier 3 analysis with specialized cooling engineering is recommended." },
+    agriculture: { hvacElectricPct: 0.20, hvacGasPct: 0.80, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    greenhouse: { hvacElectricPct: 0.30, hvacGasPct: 0.90, hvacMeasureApplicable: true, hvacMeasureNote: "Greenhouse HVAC requires crop-specific analysis. Standard calculations may not reflect actual heating/cooling requirements." },
+    multifamily: { hvacElectricPct: 0.20, hvacGasPct: 0.65, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    hotel: { hvacElectricPct: 0.30, hvacGasPct: 0.60, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    grocery: { hvacElectricPct: 0.15, hvacGasPct: 0.80, hvacMeasureApplicable: true, hvacMeasureNote: null },
+    other: { hvacElectricPct: 0.25, hvacGasPct: 0.75, hvacMeasureApplicable: true, hvacMeasureNote: null },
+  };
+
+  for (const [buildingTypeId, hvacConfig] of Object.entries(hvacBuildingUpdates)) {
+    await prisma.buildingTypeConfig.update({
+      where: { buildingTypeId },
+      data: hvacConfig,
+    });
+  }
+
+  console.log(`  ✓ ${Object.keys(hvacBuildingUpdates).length} building types updated with HVAC config`);
+
   console.log("\nOntario configuration seeding complete.");
 }
 

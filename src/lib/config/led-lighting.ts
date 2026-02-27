@@ -130,32 +130,25 @@ export function isHidAdjustmentEligible(buildingTypeId: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// SaveOnEnergy Incentive Config
+// Re-export shared financial config (used by LED and all measure cards)
 // ---------------------------------------------------------------------------
 
-/** $/kWh saved — SaveOnEnergy Custom stream (June 2025) */
-export const SOE_CUSTOM_INCENTIVE_RATE = 0.20;
+export {
+  NPV_DISCOUNT_RATE,
+  NPV_ANALYSIS_PERIOD_YEARS,
+  RATE_ESCALATION_CONSERVATIVE,
+  RATE_ESCALATION_BASE,
+  RATE_ESCALATION_HIGH,
+  SOE_CUSTOM_RATE_KWH,
+  SOE_CAP_PCT,
+} from "@/lib/config/financial-defaults";
 
-/** Cap: 50% of eligible project costs */
-export const SOE_INCENTIVE_CAP_PCT = 0.50;
+// Backward-compatible aliases
+export { SOE_CUSTOM_RATE_KWH as SOE_CUSTOM_INCENTIVE_RATE } from "@/lib/config/financial-defaults";
+export { SOE_CAP_PCT as SOE_INCENTIVE_CAP_PCT } from "@/lib/config/financial-defaults";
 
 /** Regional adder multiplier for grid-constrained areas (future enhancement) */
 export const SOE_REGIONAL_ADDER_MULTIPLIER = 2.0;
-
-// ---------------------------------------------------------------------------
-// Financial Defaults (shared across all measure cards)
-// ---------------------------------------------------------------------------
-
-/** NPV discount rate — disclosed in footnote */
-export const NPV_DISCOUNT_RATE = 0.06;
-
-/** NPV analysis period in years */
-export const NPV_ANALYSIS_PERIOD_YEARS = 10;
-
-/** Rate escalation scenarios (matches rate framework approved decision #3) */
-export const RATE_ESCALATION_CONSERVATIVE = 0.02;
-export const RATE_ESCALATION_BASE = 0.025;
-export const RATE_ESCALATION_HIGH = 0.045;
 
 /** Demand savings diversity factor — fraction of lighting at peak */
 export const DEMAND_SAVINGS_DIVERSITY_FACTOR = 0.80;

@@ -119,6 +119,12 @@ model BuildingTypeConfig {
   ledMeasureApplicable     Boolean  @default(true) @map("led_measure_applicable")
   ledMeasureNote           String?  @map("led_measure_note")
 
+  // HVAC measure config per building type
+  hvacElectricPct          Decimal? @map("hvac_electric_pct")
+  hvacGasPct               Decimal? @map("hvac_gas_pct")
+  hvacMeasureApplicable    Boolean  @default(true) @map("hvac_measure_applicable")
+  hvacMeasureNote          String?  @map("hvac_measure_note")
+
   updatedAt                DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("building_type_config")
@@ -185,6 +191,16 @@ model Assessment {
 
   // LED Measure Inputs
   lightingType          String?  @map("lighting_type") @db.VarChar(30)
+
+  // HVAC Measure Inputs
+  fuelSource            String?  @map("fuel_source") @db.VarChar(20)
+  hvacAge               String?  @map("hvac_age") @db.VarChar(20)
+  annualGasCost         Decimal? @map("annual_gas_cost")
+  annualOilLitres       Decimal? @map("annual_oil_litres")
+  annualOilCost         Decimal? @map("annual_oil_cost")
+  annualPropaneLitres   Decimal? @map("annual_propane_litres")
+  annualPropaneCost     Decimal? @map("annual_propane_cost")
+  ownershipType         String?  @map("ownership_type") @db.VarChar(10)
 
   // Rate Classification Results (Section 6.4)
   rateClass             String?  @map("rate_class") @db.VarChar(20)
@@ -292,6 +308,35 @@ model MeasureResult {
   confidence             String?  @map("confidence") @db.VarChar(10)
   confidenceNote         String?  @map("confidence_note")
   measureFlags           Json?    @map("measure_flags")
+
+  // HVAC-specific result fields
+  hvacScenarioPrimary        String?  @map("hvac_scenario_primary") @db.VarChar(10)
+  hvacScenarioAlternative    String?  @map("hvac_scenario_alternative") @db.VarChar(10)
+  hvacDataPath               String?  @map("hvac_data_path") @db.VarChar(10)
+  hvacElectricityPoolKwh     Decimal? @map("hvac_electricity_pool_kwh")
+  hvacGasPoolM3              Decimal? @map("hvac_gas_pool_m3")
+  hvacGasPoolEstimated       Boolean? @map("hvac_gas_pool_estimated")
+  hvacHeatingElecAddedKwh    Decimal? @map("hvac_heating_elec_added_kwh")
+  hvacCoolingKwhSavings      Decimal? @map("hvac_cooling_kwh_savings")
+  hvacGasDisplacedM3         Decimal? @map("hvac_gas_displaced_m3")
+  hvacDollarSavingsGas       Decimal? @map("hvac_dollar_savings_gas")
+  hvacDollarCostElecAdded    Decimal? @map("hvac_dollar_cost_elec_added")
+  hvacDollarSavingsCooling   Decimal? @map("hvac_dollar_savings_cooling")
+  hvacDollarSavingsNet       Decimal? @map("hvac_dollar_savings_net")
+  hvacDemandSavings          Decimal? @map("hvac_demand_savings")
+  hvacProjectCostMidpoint    Decimal? @map("hvac_project_cost_midpoint")
+  hvacProjectCostUpper       Decimal? @map("hvac_project_cost_upper")
+  hvacIncrementalCost        Decimal? @map("hvac_incremental_cost")
+  hvacIncentiveLow           Decimal? @map("hvac_incentive_low")
+  hvacIncentiveHigh          Decimal? @map("hvac_incentive_high")
+  hvacCo2AvoidedScope1       Decimal? @map("hvac_co2_avoided_scope1")
+  hvacCo2AddedScope2         Decimal? @map("hvac_co2_added_scope2")
+  hvacCo2NetReduction        Decimal? @map("hvac_co2_net_reduction")
+  hvacCo2ReductionPct        Decimal? @map("hvac_co2_reduction_pct")
+  hvacSeasonalCopUsed        Decimal? @map("hvac_seasonal_cop_used")
+  hvacExistingEfficiencyUsed Decimal? @map("hvac_existing_efficiency_used")
+  hvacEffectiveGasRateUsed   Decimal? @map("hvac_effective_gas_rate_used")
+  hvacCostBasis              String?  @map("hvac_cost_basis")
 
   // Carbon pricing (structural — null for Ontario)
   carbonSavingsPerMeasure Decimal? @map("carbon_savings_per_measure")
