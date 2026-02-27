@@ -479,6 +479,38 @@ async function main() {
 
   console.log(`  ✓ ${Object.keys(hvacBuildingUpdates).length} building types updated with HVAC config`);
 
+  // -------------------------------------------------------------------
+  // 10. Update Building Types with Solar PV Measure Config
+  // -------------------------------------------------------------------
+
+  const solarBuildingUpdates: Record<string, { solarStoreyFactor: number; solarRoofUtilization: number; solarBaseloadPct: number; solarSelfConsumptionNm: number; solarMeasureApplicable: boolean; solarMeasureNote: string | null }> = {
+    office:             { solarStoreyFactor: 0.33, solarRoofUtilization: 0.55, solarBaseloadPct: 0.55, solarSelfConsumptionNm: 0.65, solarMeasureApplicable: true, solarMeasureNote: null },
+    warehouse:          { solarStoreyFactor: 1.00, solarRoofUtilization: 0.70, solarBaseloadPct: 0.75, solarSelfConsumptionNm: 0.80, solarMeasureApplicable: true, solarMeasureNote: null },
+    warehouse_cold:     { solarStoreyFactor: 1.00, solarRoofUtilization: 0.60, solarBaseloadPct: 0.60, solarSelfConsumptionNm: 0.85, solarMeasureApplicable: true, solarMeasureNote: null },
+    manufacturing:      { solarStoreyFactor: 1.00, solarRoofUtilization: 0.65, solarBaseloadPct: 0.70, solarSelfConsumptionNm: 0.75, solarMeasureApplicable: true, solarMeasureNote: null },
+    manufacturing_food: { solarStoreyFactor: 0.80, solarRoofUtilization: 0.55, solarBaseloadPct: 0.65, solarSelfConsumptionNm: 0.80, solarMeasureApplicable: true, solarMeasureNote: null },
+    retail:             { solarStoreyFactor: 0.80, solarRoofUtilization: 0.65, solarBaseloadPct: 0.55, solarSelfConsumptionNm: 0.70, solarMeasureApplicable: true, solarMeasureNote: null },
+    restaurant:         { solarStoreyFactor: 0.80, solarRoofUtilization: 0.45, solarBaseloadPct: 0.60, solarSelfConsumptionNm: 0.60, solarMeasureApplicable: true, solarMeasureNote: null },
+    medical_office:     { solarStoreyFactor: 0.33, solarRoofUtilization: 0.40, solarBaseloadPct: 0.65, solarSelfConsumptionNm: 0.80, solarMeasureApplicable: true, solarMeasureNote: null },
+    school:             { solarStoreyFactor: 0.50, solarRoofUtilization: 0.55, solarBaseloadPct: 0.50, solarSelfConsumptionNm: 0.55, solarMeasureApplicable: true, solarMeasureNote: null },
+    data_center:        { solarStoreyFactor: 0.50, solarRoofUtilization: 0.30, solarBaseloadPct: 0.90, solarSelfConsumptionNm: 0.90, solarMeasureApplicable: true, solarMeasureNote: "Data centers have limited available roof area due to cooling infrastructure. Solar can offset only a small fraction of total electricity consumption." },
+    agriculture:        { solarStoreyFactor: 1.00, solarRoofUtilization: 0.60, solarBaseloadPct: 0.65, solarSelfConsumptionNm: 0.70, solarMeasureApplicable: true, solarMeasureNote: null },
+    greenhouse:         { solarStoreyFactor: 1.00, solarRoofUtilization: 0.00, solarBaseloadPct: 0.50, solarSelfConsumptionNm: 0.00, solarMeasureApplicable: false, solarMeasureNote: "Rooftop solar is not suitable for greenhouse structures due to structural limitations and light transmission requirements. Ground-mount solar may be viable — see Tier 3." },
+    multifamily:        { solarStoreyFactor: 0.25, solarRoofUtilization: 0.45, solarBaseloadPct: 0.60, solarSelfConsumptionNm: 0.60, solarMeasureApplicable: true, solarMeasureNote: null },
+    hotel:              { solarStoreyFactor: 0.25, solarRoofUtilization: 0.40, solarBaseloadPct: 0.55, solarSelfConsumptionNm: 0.70, solarMeasureApplicable: true, solarMeasureNote: null },
+    grocery:            { solarStoreyFactor: 1.00, solarRoofUtilization: 0.60, solarBaseloadPct: 0.70, solarSelfConsumptionNm: 0.80, solarMeasureApplicable: true, solarMeasureNote: null },
+    other:              { solarStoreyFactor: 0.50, solarRoofUtilization: 0.55, solarBaseloadPct: 0.60, solarSelfConsumptionNm: 0.70, solarMeasureApplicable: true, solarMeasureNote: null },
+  };
+
+  for (const [buildingTypeId, solarConfig] of Object.entries(solarBuildingUpdates)) {
+    await prisma.buildingTypeConfig.update({
+      where: { buildingTypeId },
+      data: solarConfig,
+    });
+  }
+
+  console.log(`  ✓ ${Object.keys(solarBuildingUpdates).length} building types updated with Solar PV config`);
+
   console.log("\nOntario configuration seeding complete.");
 }
 
